@@ -18,10 +18,14 @@ type band struct {
 	Date string
 }
 
-var bandsAdded = make(map[string]*band)
-var bandsUpdated = make(map[string]*band)
+var (
+	bandsAdded   = make(map[string]*band)
+	bandsUpdated = make(map[string]*band)
 
-var twitter *anaconda.TwitterApi
+	twitter *anaconda.TwitterApi
+
+	silent *bool
+)
 
 func getBands(doc *goquery.Document, cache map[string]*band, selector string) map[string]*band {
 	bs := make(map[string]*band)
@@ -79,8 +83,6 @@ func work(tweet bool) {
 	go bandsJob(tweet, doc, bandsAdded, "#additionBands tr", "added")
 	go bandsJob(tweet, doc, bandsUpdated, "#updatedBands tr", "updated")
 }
-
-var silent *bool
 
 func main() {
 	silent = flag.Bool("s", false, "silent mode")
