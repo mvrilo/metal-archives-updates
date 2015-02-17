@@ -105,7 +105,10 @@ func main() {
 		log.Fatal("You need to authorize Twitter API by passing the access key/secret")
 	}
 
-	println("Watching...")
+	if !*silent {
+		log.Println("Watching...")
+	}
+
 	work(false)
 
 	for {
