@@ -2,8 +2,6 @@
 
 Watches periodically for updates in [Metal Archives](http://www.metal-archives.com/) site and tweet them.
 
-For now, only works with bands updates and additions.
-
 Example:
 
 ```
