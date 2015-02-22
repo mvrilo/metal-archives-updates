@@ -29,20 +29,29 @@ var (
 	artistsAdded   = make(map[string]*data)
 	artistsUpdated = make(map[string]*data)
 
+	reviewsAdded = make(map[string]*data)
+
 	twitter *anaconda.TwitterApi
 
 	silent *bool
 	tweet  *bool
 )
 
-func getData(doc *goquery.Document, cache map[string]*data, selector string) map[string]*data {
+func getData(doc *goquery.Document, cache map[string]*data, id string) map[string]*data {
 	bs := make(map[string]*data)
-	doc.Find(selector).Each(func(i int, s *goquery.Selection) {
+	doc.Find(id + " tr").Each(func(i int, s *goquery.Selection) {
 		td := s.Find("td")
-		info := td.First().Find("a").First()
-		url, _ := info.Attr("href")
+		url, _ := td.Eq(0).Find("a").First().Attr("href")
+
+		var info string
+		if td.Length() == 3 {
+			url, _ = td.Eq(1).Find("a").First().Attr("href")
+			info += `"` + td.Eq(1).Text() + `", for `
+		}
+		info += td.Eq(0).Find("a").First().Text()
+
 		b := &data{
-			Name: info.Text(),
+			Name: info,
 			Date: td.Last().Text(),
 			URL:  url,
 		}
@@ -61,8 +70,8 @@ func getData(doc *goquery.Document, cache map[string]*data, selector string) map
 	return bs
 }
 
-func job(title string, t bool, doc *goquery.Document, cache map[string]*data, selector, status string) {
-	data := getData(doc, cache, selector)
+func job(title string, t bool, doc *goquery.Document, cache map[string]*data, divID, status string) {
+	data := getData(doc, cache, divID)
 	for _, b := range data {
 		if !*silent {
 			log.Printf("%s %s: %s (%s) %s\n", title, status, b.Name, b.URL, b.Date)
@@ -82,14 +91,15 @@ func job(title string, t bool, doc *goquery.Document, cache map[string]*data, se
 	}
 }
 
-func bandsWorker(t bool) {
+func rootWorker(t bool) {
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go job("band", t, doc, bandsAdded, "#additionBands tr", "added")
-	go job("band", t, doc, bandsUpdated, "#updatedBands tr", "updated")
+	go job("band", t, doc, bandsAdded, "#additionBands", "added")
+	go job("band", t, doc, bandsUpdated, "#updatedBands", "updated")
+	go job("review", t, doc, reviewsAdded, "#lastReviews", "added")
 }
 
 func labelsJob(t bool, url string, cache map[string]*data, status string) {
@@ -98,7 +108,7 @@ func labelsJob(t bool, url string, cache map[string]*data, status string) {
 		log.Fatal(err)
 	}
 
-	job("label", t, doc, cache, "#additionLabels tr", status)
+	job("label", t, doc, cache, "#additionLabels", status)
 }
 
 func labelsWorker(t bool) {
@@ -112,7 +122,7 @@ func artistsJob(t bool, url string, cache map[string]*data, status string) {
 		log.Fatal(err)
 	}
 
-	job("artist", t, doc, cache, "#additionArtists tr", status)
+	job("artist", t, doc, cache, "#additionArtists", status)
 }
 
 func artistsWorker(t bool) {
@@ -150,14 +160,14 @@ func main() {
 		log.Println("Watching...")
 	}
 
-	go bandsWorker(false)
+	go rootWorker(false)
 	go labelsWorker(false)
 	go artistsWorker(false)
 
 	for {
 		select {
 		case <-time.Tick(30 * time.Second):
-			go bandsWorker(*tweet)
+			go rootWorker(*tweet)
 			go labelsWorker(*tweet)
 			go artistsWorker(*tweet)
 		}
