@@ -38,7 +38,7 @@ var (
 )
 
 func getData(doc *goquery.Document, cache map[string]*data, id string) map[string]*data {
-	bs := make(map[string]*data)
+	bands := make(map[string]*data)
 	doc.Find(id + " tr").Each(func(i int, s *goquery.Selection) {
 		td := s.Find("td")
 		url, _ := td.Eq(0).Find("a").First().Attr("href")
@@ -55,19 +55,19 @@ func getData(doc *goquery.Document, cache map[string]*data, id string) map[strin
 			Date: td.Last().Text(),
 			URL:  url,
 		}
-		bs[b.URL] = b
+		bands[b.URL] = b
 	})
 
-	for url1, b := range bs {
-		for url2, _ := range cache {
+	for url1, b := range bands {
+		for url2 := range cache {
 			if url1 == url2 {
-				delete(bs, url2)
+				delete(bands, url2)
 			}
 		}
 		cache[url1] = b
 	}
 
-	return bs
+	return bands
 }
 
 func job(title string, t bool, doc *goquery.Document, cache map[string]*data, divID, status string) {
@@ -108,7 +108,7 @@ func labelsJob(t bool, url string, cache map[string]*data, status string) {
 		log.Fatal(err)
 	}
 
-	job("label", t, doc, cache, "#additionLabels", status)
+	go job("label", t, doc, cache, "#additionLabels", status)
 }
 
 func labelsWorker(t bool) {
@@ -122,7 +122,7 @@ func artistsJob(t bool, url string, cache map[string]*data, status string) {
 		log.Fatal(err)
 	}
 
-	job("artist", t, doc, cache, "#additionArtists", status)
+	go job("artist", t, doc, cache, "#additionArtists", status)
 }
 
 func artistsWorker(t bool) {
